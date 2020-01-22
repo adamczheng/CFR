@@ -11,9 +11,10 @@ extern "C" {
 #include <fstream>
 #include <cstdio>
 #include "ehs_lookup.hpp"
+#include "HandRanks.hpp"
 using namespace std;
 class Buckets {
-	int HR[32487834];
+	
 	string pf_cluster[8] = { "23s,24s,25s,26s,27s,34s,35s,36s,37s,45s,46s,32o,43o,42o,54o,53o,52o,65o,64o,63o,62o,74o,73o,72o,83o,82o",
 "28s,29s,2Ts,38s,39s,47s,48s,49s,75o,85o,84o,95o,94o,93o,92o,T5o,T4o,T3o,T2o,J3o,J2o",
 "3Ts,4Ts,56s,57s,58s,59s,5Ts,67s,68s,69s,6Ts,78s,79s,89s,67o,68o,69o,6To,78o,79o,7To,89o,8To",
@@ -77,18 +78,16 @@ class Buckets {
 			}
 		}
 	}
-	EHSLookup* ehslp;
-	hand_indexer_t indexer[4];
+	
+	
 	ifstream f_in, t_in, r_in;
 	vector<vector<double> > flop_centers, turn_centers, river_centers;
 public:
-
+	HandRanks* hr;
+	hand_indexer_t indexer[4];
+	EHSLookup* ehslp;
 	Buckets() {
-		memset(HR, 0, sizeof(HR));
-		FILE* fin = fopen("handranks.dat", "rb");
-		// Load the HANDRANKS.DAT file data into the HR array
-		size_t bytesread = fread(HR, sizeof(HR), 1, fin);
-		fclose(fin);
+		hr = new HandRanks("handranks.dat");
 		split_clusters();
 		ehslp = new EHSLookup("ehs.dat");
 		uint8_t iiii[] = { 2 };
@@ -126,15 +125,6 @@ public:
 			river_centers.push_back(p);
 		}
 		r_in.close();
-	}
-	int GetHandValue(array<int, 7> cards) {
-		int p = HR[53 + cards[0] + 1];
-		p = HR[p + cards[1] + 1];
-		p = HR[p + cards[2] + 1];
-		p = HR[p + cards[3] + 1];
-		p = HR[p + cards[4] + 1];
-		p = HR[p + cards[5] + 1];
-		return HR[p + cards[6] + 1];
 	}
 	static int GetBucketCount(int street) {
 		if (street == 0) {
@@ -213,7 +203,7 @@ public:
 		for (int i = 0; i < 5; i++)
 			used[board[i]] = 1;
 		array<int, 7> schand = { board[0], board[1], board[2], board[3], board[4], hand[0], hand[1] };
-		int my_strength = GetHandValue(schand);
+		int my_strength = hr->GetHandValue(schand);
 		vector<double> res;
 		for (int cluster = 0; cluster < 8; cluster++) {
 			int tot = 0;
@@ -223,7 +213,7 @@ public:
 					continue;
 				schand[5] = opp_hand[0];
 				schand[6] = opp_hand[1];
-				int opp_strength = GetHandValue(schand);
+				int opp_strength = hr->GetHandValue(schand);
 				if (my_strength > opp_strength) {
 					my_tot += 2;
 				}
@@ -249,7 +239,15 @@ public:
 			int r2 = hand[1] / 4;
 			bool suited = ((hand[0] % 4) == (hand[1] % 4));
 			if (r1 > r2) std::swap(r1, r2);
-			return (13 * r1 + r2) * 2 + (suited ? 1 : 0);
+			if (r1 == r2) {
+				return r1;
+			}
+			int os[12] = { 13, 25, 36, 46, 55, 63, 70, 76, 81, 85, 88, 90 };
+			int ss[12] = { 91, 103, 114, 124, 133, 141, 148, 154, 159, 163, 166, 168 };
+			if (suited) {
+				return ss[r1] + r2;
+			}
+			return os[r1] + r2;
 		}
 		else if (street == 3) {
 			// create histogram
@@ -301,4 +299,4 @@ public:
 			return best_center;
 		}
 	}
-} Bucketer;
+};

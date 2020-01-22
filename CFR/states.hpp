@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include "actions.hpp"
+#include <random>
+#include <chrono>
 
 using std::array;
 using std::vector;
@@ -39,6 +41,7 @@ class State
 {
 public:
 	bool is_decision;
+	int who_won;
 	vector<State*> children;
 	//virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op);
 	//virtual double BestResponse(int brplayer, int hand, const vector<double>& op);
@@ -59,6 +62,9 @@ public:
 		previous_state(previous_state)
 	{
 		is_decision = false;
+	}
+	double TrainExternalSampling(int trainplayer, int* hands, double p, double op) {
+		return 69;
 	}
 };
 

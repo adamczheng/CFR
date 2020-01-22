@@ -4,6 +4,7 @@
 #include "Fold.cpp"
 #include "states.hpp"
 #include "actions.hpp"
+#include "CFR.cpp"
 
 using namespace std;
 
@@ -12,7 +13,6 @@ const int NUM_BET_SIZES = 4;
 const int NUM_RAISE_SIZES = 2;
 const array<double, NUM_BET_SIZES> BET_SIZES = { 0.5, 1.0, 2.0, 999 };
 const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 1.0, 999 };
-mt19937 rng;
 set<pair<int,pair<int,int> > > n_sets[6];
 void build_tree(State*& state, int active) {
 	if (state->is_decision) {
@@ -26,7 +26,7 @@ void build_tree(State*& state, int active) {
 		int my_contribution = STARTING_STACK - my_stack;  // the number of chips you have contributed to the pot
 		int opp_contribution = STARTING_STACK - opp_stack;  // the number of chips your opponent has contributed to the pot
 		int pot = 2 * opp_contribution;
-		n_sets[round_state->street].insert({ pot, {my_pip, opp_pip} });
+		n_sets[round_state->street].insert({ pot, {round_state->pips[0], round_state->pips[1]} });
 		if ((legal_action_mask & RAISE_ACTION_TYPE) && round_state->button < 4) {
 			int min_raise = round_state->raise_bounds()[0];
 			int max_raise = round_state->raise_bounds()[1];
@@ -96,7 +96,7 @@ inline bool exists_test1(const std::string& name) {
 	}
 }
 int main() {
-	rng.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+	freopen("dump.txt", "w", stdout);
 	// Fold(N): player 0 wins N, player 1 loses N
 	// Showdown(N): better hand wins N, worse hand loses N
 	// ante 1
@@ -108,7 +108,71 @@ int main() {
 		tmp,
 		array<int,5>({ 0, 0, 0, 0, 0 }), NULL);
 	build_tree(root, 0);
-	cout << n_sets[0].size() << ' ' << n_sets[3].size() << ' ' << n_sets[4].size() << ' ' << n_sets[5].size() << endl;
+	cerr << n_sets[0].size() << ' ' << n_sets[3].size() << ' ' << n_sets[4].size() << ' ' << n_sets[5].size() << endl;
+	CFR cfr;
+	int i = 0;
+	for (pair<int, pair<int, int> > p : n_sets[0]) {
+		cfr.pot_index[0][p] = i++;
+		cfr.pot_index[1][p] = i++;
+		//cfr.pot_index[p.first][p.second.first]p.second.second] = i++;
+	}
+	for (pair<int, pair<int, int> > p : n_sets[3]) {
+		cfr.pot_index[0][p] = i++;
+		cfr.pot_index[1][p] = i++;
+		//cfr.pot_index[p.first][p.second.first][p.second.second] = i++;
+	}
+	for (pair<int, pair<int, int> > p : n_sets[4]) {
+		cfr.pot_index[0][p] = i++;
+		cfr.pot_index[1][p] = i++;
+		//cfr.pot_index[p.first][p.second.first][p.second.second] = i++;
+	}
+	for (pair<int, pair<int, int> > p : n_sets[5]) {
+		cfr.pot_index[0][p] = i++;
+		cfr.pot_index[1][p] = i++;
+		//cfr.pot_index[p.first][p.second.first][p.second.second] = i++;
+	}
+
+	mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+	uniform_int_distribution<int> distribution(0, 51);
+	for (int iter = 0; iter < 1000; iter++) {
+		if (iter % 50 == 0) cerr << iter << endl;
+		// generate hole cards and board
+		bitset<52> bs;
+		array<array<int, 2>, 2> hands;
+		array<int, 5> board;
+		for (int a = 0; a < 2; a++) {
+			for (int b = 0; b < 2; b++) {
+				int x;
+				do {
+					x = distribution(rng);
+				} while (bs[x]);
+				bs[x] = 1;
+				hands[a][b] = x;
+			}
+		}
+		for (int a = 0; a < 5; a++) {
+			int x;
+			do {
+				x = distribution(rng);
+			} while (bs[x]);
+			bs[x] = 1;
+			board[a] = x;
+		}
+		array<int, 7> cards = { board[0], board[1], board[2], board[3], board[4], hands[0][0], hands[0][1] };
+		int player0strength = cfr.Bucketer->hr->GetHandValue(cards);
+		cards[5] = hands[1][0];
+		cards[6] = hands[1][1];
+		int player1strength = cfr.Bucketer->hr->GetHandValue(cards);
+		int who_won = 2; // 2 = tie
+		if (player0strength > player1strength) who_won = 0;
+		else if (player1strength > player0strength) who_won = 1;
+		cfr.TrainExternalSampling(root, 0, hands, board, 1, 1, who_won);
+		cfr.TrainExternalSampling(root, 1, hands, board, 1, 1, who_won);
+	}
+	cout << cfr.iset_cnt << endl;
+	cfr.dump_strategy(root, {});
+	
+
 	/*Decision* root = new Decision(0, {
 		// p0 bets 1
 		new Decision(1, {

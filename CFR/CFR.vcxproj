@@ -78,6 +78,7 @@
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
     <ClCompile Include="actions.cpp" />
+    <ClCompile Include="CFR.cpp" />
     <ClCompile Include="deck.c" />
     <ClCompile Include="GameTreeNode.cpp" />
     <ClCompile Include="hand_index.c" />
@@ -94,9 +95,9 @@
     <ClInclude Include="deck.h" />
     <ClInclude Include="ehs_lookup.hpp" />
     <ClInclude Include="GameTreeNode.h" />
+    <ClInclude Include="HandRanks.hpp" />
     <ClInclude Include="hand_index-impl.h" />
     <ClInclude Include="hand_index.h" />
-    <ClInclude Include="InfoSet.h" />
     <ClInclude Include="states.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +105,7 @@
     <None Include="handranks.dat" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="dump.txt" />
     <Text Include="flopcenters.txt" />
     <Text Include="rivercenters.txt" />
     <Text Include="turncenters.txt" />
