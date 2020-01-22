@@ -6,3 +6,4 @@ public:
 	vector<double> regret;
 	vector<double> cumulativeStrategy;
 };
+InfoSet iset[6][200];

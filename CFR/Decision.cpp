@@ -1,4 +1,4 @@
-#include "states.hpp"
+/*#include "states.hpp"
 #include "actions.hpp"
 #include "Fold.cpp"
 #include "InfoSet.h"
@@ -12,9 +12,9 @@ private:
 	int player;
 	vector<State*> children;
 	InfoSet& iset;
-	mt19937 rng;
+	std::mt19937 rng;
 public:
-	Decision(int pl, vector<State*> c, InfoSet is) {
+	Decision(int pl, vector<State*> c) {
 		player = pl;
 		children = c;
 		iset = is;
@@ -23,7 +23,7 @@ public:
 	}
 
 	int SampleStrategy(const vector<double>& s) {
-		uniform_real_distribution<double> distribution(0, 1);
+		std::uniform_real_distribution<double> distribution(0, 1);
 		double r = distribution(rng);
 		double acc = 0;
 		for (int i = 0; i < (int)s.size(); i++) {
@@ -221,4 +221,4 @@ public:
 		}
 		}
 	}
-};
+};*/

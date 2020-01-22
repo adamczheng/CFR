@@ -1,9 +1,13 @@
+#ifndef __SKELETON_STATES_HPP__
+#define __SKELETON_STATES_HPP__
 #include <array>
 #include <string>
 #include <map>
+#include <vector>
 #include "actions.hpp"
 
 using std::array;
+using std::vector;
 using std::string;
 
 const int NUM_ROUNDS = 1000;
@@ -33,6 +37,12 @@ public:
  */
 class State
 {
+public:
+	bool is_decision;
+	vector<State*> children;
+	//virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op);
+	//virtual double BestResponse(int brplayer, int hand, const vector<double>& op);
+	//virtual void PrintStrategy(int* hands, int depth, string history);
 };
 
 /**
@@ -47,7 +57,9 @@ public:
 	TerminalState(array<int, 2> deltas, State* previous_state) :
 		deltas(deltas),
 		previous_state(previous_state)
-	{}
+	{
+		is_decision = false;
+	}
 };
 
 /**
@@ -61,25 +73,27 @@ public:
 	const int street; // 0, 3, 4, 5
 	const array<int, 2> pips;
 	const array<int, 2> stacks;
-	const array< array<string, 2>, 2 > hands;
-	const array<string, 5> deck;
+	const array< array<int, 2>, 2 > hands;
+	const array<int, 5> board;
 	State* const previous_state;
 
 	RoundState(int button,
 		int street,
 		array<int, 2> pips,
 		array<int, 2> stacks,
-		array< array<string, 2>, 2 > hands,
-		array<string, 5> deck,
+		array< array<int, 2>, 2 > hands,
+		array<int, 5> board,
 		State* previous_state) :
 		button(button),
 		street(street),
 		pips(pips),
 		stacks(stacks),
 		hands(hands),
-		deck(deck),
+		board(board),
 		previous_state(previous_state)
-	{}
+	{
+		is_decision = true;
+	}
 
 	/**
 	 * Compares the players' hands and computes payoffs.
@@ -106,8 +120,5 @@ public:
 	 */
 	State* proceed(Action action);
 
-	// external sampling
-	double Train(int trainplayer, double p, double op);
-
-	//double BestResponse(int brplayer, const std::map<InfoSet, double> &op);
 };
+#endif  // __SKELETON_STATES_HPP__

@@ -1,4 +1,4 @@
-#include "Deck.h"
+/*#include "Deck.h"
 class Iteration {
 private:
 	static const int PLAYER_COUNT = 2;
@@ -40,4 +40,4 @@ public:
 		else
 			return 0.0;
 	}
-};
+};*/

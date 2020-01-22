@@ -9,6 +9,7 @@ extern "C" {
 #include <cassert>
 #include <bitset>
 #include <fstream>
+#include <cstdio>
 #include "ehs_lookup.hpp"
 using namespace std;
 class Buckets {
@@ -193,6 +194,17 @@ public:
 			bucket[i] /= sum;
 		return bucket;
 	}
+	double EMD(const vector<double>& a, const vector<double>& b) {
+		assert(a.size() == b.size());
+		int n = a.size();
+		double res = 0;
+		double cur = 0;
+		for (int i = 0; i < n; i++) {
+			cur = a[i] + cur - b[i];
+			res += abs(cur);
+		}
+		return res;
+	}
 	vector<double> GetOCHS(array<int, 2> hand, array<int, 5> board) {
 		// only on river
 		bitset<52> used;
@@ -243,11 +255,33 @@ public:
 			// create histogram
 			vector<double> hist = GetHistogram(street, hand, board);
 			// return closest (emd) center from generated flop centers
+			assert(flop_centers.size());
+			int best_center = 0;
+			double best_dist = EMD(hist, flop_centers[0]);
+			for (int i = 1; i < 100; i++) {
+				double cur_dist = EMD(hist, flop_centers[i]);
+				if (cur_dist < best_dist) {
+					best_dist = cur_dist;
+					best_center = i;
+				}
+			}
+			return best_center;
 		}
 		else if (street == 4) {
 			// create histogram
 			vector<double> hist = GetHistogram(street, hand, board);
 			// return closest (emd) center from generated turn centers
+			assert(turn_centers.size());
+			int best_center = 0;
+			double best_dist = EMD(hist, turn_centers[0]);
+			for (int i = 1; i < 100; i++) {
+				double cur_dist = EMD(hist, turn_centers[i]);
+				if (cur_dist < best_dist) {
+					best_dist = cur_dist;
+					best_center = i;
+				}
+			}
+			return best_center;
 		}
 		else {
 			// street == 5
@@ -267,4 +301,4 @@ public:
 			return best_center;
 		}
 	}
-};
+} Bucketer;

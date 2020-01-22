@@ -1,8 +1,9 @@
-#include "GameTreeNode.h"
-class Fold : public GameTreeNode {
+/*#include "states.hpp"
+class Fold : public State {
 public:
 	double value;
 	Fold(double val) {
+		is_decision = false;
 		value = val;
 	}
 	virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op) override {
@@ -18,4 +19,4 @@ public:
 			ev += value * op[i];
 		return brplayer == 0 ? ev : -ev;
 	}
-};
+};*/

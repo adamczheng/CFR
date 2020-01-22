@@ -1,3 +1,6 @@
+#ifndef __SKELETON_ACTIONS_HPP__
+#define __SKELETON_ACTIONS_HPP__
+
 enum ActionType
 {
 	FOLD_ACTION_TYPE = (1 << 0),
@@ -16,3 +19,5 @@ Action FoldAction();
 Action CallAction();
 Action CheckAction();
 Action RaiseAction(int amount);
+
+#endif  // __SKELETON_ACTIONS_HPP__

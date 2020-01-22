@@ -1,8 +1,9 @@
-#include "GameTreeNode.h"
-class Showdown : public GameTreeNode {
+/*#include "states.hpp"
+class Showdown : public State {
 public:
 	double value;
 	Showdown(double val) {
+		is_decision = false;
 		value = val;
 	}
 	virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op) override {
@@ -18,4 +19,4 @@ public:
 		}
 		return ev;
 	}
-};
+};*/
