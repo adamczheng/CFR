@@ -6,6 +6,7 @@
 #include "states.hpp"
 #include "Buckets.cpp"
 #include <iomanip>
+#include <unordered_map>
 using std::vector;
 using std::array;
 class InfoSet {
@@ -22,7 +23,7 @@ public:
 };
 class CFR {
 	std::mt19937 rng;
-	map<int, InfoSet*> infoset[6][200];
+	unordered_map<int, InfoSet*> infoset[6][200];
 public:
 	map<pair<int,pair<int,int> >,int> pot_index[2];
 	Buckets* Bucketer;
@@ -254,7 +255,6 @@ public:
 			else {
 				assert(legal_action_mask & CALL_ACTION_TYPE);
 				assert(legal_action_mask & FOLD_ACTION_TYPE);
-				state->children.push_back(round_state->proceed(CallAction()));
 				//history.push_back({ 'C', 0 });
 				dump_strategy(state->children[child_id++], history);
 				//history.pop_back();

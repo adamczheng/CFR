@@ -80,13 +80,8 @@
     <ClCompile Include="actions.cpp" />
     <ClCompile Include="CFR.cpp" />
     <ClCompile Include="deck.c" />
-    <ClCompile Include="GameTreeNode.cpp" />
     <ClCompile Include="hand_index.c" />
-    <ClCompile Include="Iteration.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Decision.cpp" />
-    <ClCompile Include="Fold.cpp" />
-    <ClCompile Include="Showdown.cpp" />
     <ClCompile Include="Buckets.cpp" />
     <ClCompile Include="states.cpp" />
   </ItemGroup>
@@ -94,7 +89,6 @@
     <ClInclude Include="actions.hpp" />
     <ClInclude Include="deck.h" />
     <ClInclude Include="ehs_lookup.hpp" />
-    <ClInclude Include="GameTreeNode.h" />
     <ClInclude Include="HandRanks.hpp" />
     <ClInclude Include="hand_index-impl.h" />
     <ClInclude Include="hand_index.h" />
@@ -107,6 +101,7 @@
   <ItemGroup>
     <Text Include="dump.txt" />
     <Text Include="flopcenters.txt" />
+    <Text Include="oldstuff.txt" />
     <Text Include="rivercenters.txt" />
     <Text Include="turncenters.txt" />
   </ItemGroup>

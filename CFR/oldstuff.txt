@@ -1,3 +1,101 @@
+Showdown.cpp:
+/*#include "states.hpp"
+class Showdown : public State {
+public:
+	double value;
+	Showdown(double val) {
+		is_decision = false;
+		value = val;
+	}
+	virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op) override {
+		return hands[trainplayer] > hands[trainplayer ^ 1] ? value : -value;
+	}
+	virtual double BestResponse(int brplayer, int hand, const vector<double>& op) override {
+		double ev = 0;
+		for (int i = 0; i < (int)op.size(); i++) {
+			if (hand > i)
+				ev += value * op[i];
+			else if (hand < i)
+				ev -= value * op[i];
+		}
+		return ev;
+	}
+};*/
+
+GameTreeNode.h:
+#pragma once
+#include <vector>
+#include <string>
+using namespace std;
+
+const int STARTING_STACK = 200;
+const int BIG_BLIND = 2;
+const int SMALL_BLIND = 1;
+
+class GameTreeNode {
+public:
+	GameTreeNode();
+	vector<GameTreeNode*> children;
+	virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op);
+	virtual double BestResponse(int brplayer, int hand, const vector<double>& op);
+	virtual void PrintStrategy(int* hands, int depth, string history);
+	~GameTreeNode();
+};
+
+GameTreeNode.cpp:
+#include "GameTreeNode.h"
+#include <iostream>
+#include <string>
+
+GameTreeNode::GameTreeNode()
+{
+}
+
+double GameTreeNode::TrainExternalSampling(int trainplayer, int* hands, double p, double op)
+{
+	return 600;
+}
+
+double GameTreeNode::BestResponse(int brplayer, int hand, const vector<double>& op)
+{
+	return 600;
+}
+
+void GameTreeNode::PrintStrategy(int* hands, int depth, string history)
+{
+	//for (int i = 0; i < depth; i++) std::cout << ' ';
+	//std::cout<<history<<std::endl;
+}
+
+GameTreeNode::~GameTreeNode()
+{
+}
+
+Fold.cpp:
+/*#include "states.hpp"
+class Fold : public State {
+public:
+	double value;
+	Fold(double val) {
+		is_decision = false;
+		value = val;
+	}
+	virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op) override {
+		// why ?
+		if (trainplayer == 0)
+			return value;
+		else
+			return -value;
+	}
+	virtual double BestResponse(int brplayer, int hand, const vector<double>& op) override {
+		double ev = 0;
+		for (int i = 0; i < (int)op.size(); i++)
+			ev += value * op[i];
+		return brplayer == 0 ? ev : -ev;
+	}
+};*/
+
+Decision.cpp:
 /*#include "states.hpp"
 #include "actions.hpp"
 #include "Fold.cpp"

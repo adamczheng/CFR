@@ -77,7 +77,7 @@ State* RoundState::proceed_street()
 	{
 		new_street = this->street + 1;
 	}
-	return new RoundState(1, new_street, (array<int, 2>) { 0, 0 }, this->stacks, this->hands, this->board, this);
+	return new RoundState(1, new_street, (array<int, 2>) { 0, 0 }, this->stacks);
 }
 
 /**
@@ -108,8 +108,7 @@ State* RoundState::proceed(Action action)
 			return new RoundState(1, 0, (array<int, 2>) { BIG_BLIND, BIG_BLIND },
 				(array<int, 2>) {
 				STARTING_STACK - BIG_BLIND, STARTING_STACK - BIG_BLIND
-			},
-				this->hands, this->board, this);
+			});
 		}
 		// both players acted
 		array<int, 2> new_pips = this->pips;
@@ -117,8 +116,7 @@ State* RoundState::proceed(Action action)
 		int contribution = new_pips[1 - active] - new_pips[active];
 		new_stacks[active] -= contribution;
 		new_pips[active] += contribution;
-		RoundState* state = new RoundState(this->button + 1, this->street, new_pips, new_stacks,
-			this->hands, this->board, this);
+		RoundState* state = new RoundState(this->button + 1, this->street, new_pips, new_stacks);
 		return state->proceed_street();
 	}
 	case CHECK_ACTION_TYPE:
@@ -128,7 +126,7 @@ State* RoundState::proceed(Action action)
 			return this->proceed_street();
 		}
 		// let opponent act
-		return new RoundState(this->button + 1, this->street, this->pips, this->stacks, this->hands, this->board, this);
+		return new RoundState(this->button + 1, this->street, this->pips, this->stacks);
 	}
 	default:  // RAISE_ACTION_TYPE
 	{
@@ -137,7 +135,7 @@ State* RoundState::proceed(Action action)
 		int contribution = action.amount - new_pips[active];
 		new_stacks[active] -= contribution;
 		new_pips[active] += contribution;
-		return new RoundState(this->button + 1, this->street, new_pips, new_stacks, this->hands, this->board, this);
+		return new RoundState(this->button + 1, this->street, new_pips, new_stacks);
 	}
 	}
 }

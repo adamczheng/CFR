@@ -63,9 +63,6 @@ public:
 	{
 		is_decision = false;
 	}
-	double TrainExternalSampling(int trainplayer, int* hands, double p, double op) {
-		return 69;
-	}
 };
 
 /**
@@ -79,24 +76,15 @@ public:
 	const int street; // 0, 3, 4, 5
 	const array<int, 2> pips;
 	const array<int, 2> stacks;
-	const array< array<int, 2>, 2 > hands;
-	const array<int, 5> board;
-	State* const previous_state;
 
 	RoundState(int button,
 		int street,
 		array<int, 2> pips,
-		array<int, 2> stacks,
-		array< array<int, 2>, 2 > hands,
-		array<int, 5> board,
-		State* previous_state) :
+		array<int, 2> stacks) :
 		button(button),
 		street(street),
 		pips(pips),
-		stacks(stacks),
-		hands(hands),
-		board(board),
-		previous_state(previous_state)
+		stacks(stacks)
 	{
 		is_decision = true;
 	}

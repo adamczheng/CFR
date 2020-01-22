@@ -245,9 +245,9 @@ public:
 			int os[12] = { 13, 25, 36, 46, 55, 63, 70, 76, 81, 85, 88, 90 };
 			int ss[12] = { 91, 103, 114, 124, 133, 141, 148, 154, 159, 163, 166, 168 };
 			if (suited) {
-				return ss[r1] + r2;
+				return ss[r1] + r2 - r1 - 1;
 			}
-			return os[r1] + r2;
+			return os[r1] + r2 - r1 - 1;
 		}
 		else if (street == 3) {
 			// create histogram

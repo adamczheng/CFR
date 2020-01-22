@@ -1,7 +1,4 @@
 #include <bits/stdc++.h>
-#include "Decision.cpp"
-#include "Showdown.cpp"
-#include "Fold.cpp"
 #include "states.hpp"
 #include "actions.hpp"
 #include "CFR.cpp"
@@ -100,13 +97,9 @@ int main() {
 	// Fold(N): player 0 wins N, player 1 loses N
 	// Showdown(N): better hand wins N, worse hand loses N
 	// ante 1
-	array<array<int, 2>, 2> tmp;
-	tmp[0][0] = tmp[0][1] = tmp[1][0] = tmp[1][1] = 0;
 	State* root = new RoundState(0, 0,
 		array<int,2>({ 1, 2 }),
-		array<int,2>({ 199, 198 }),
-		tmp,
-		array<int,5>({ 0, 0, 0, 0, 0 }), NULL);
+		array<int,2>({ 199, 198 }));
 	build_tree(root, 0);
 	cerr << n_sets[0].size() << ' ' << n_sets[3].size() << ' ' << n_sets[4].size() << ' ' << n_sets[5].size() << endl;
 	CFR cfr;
@@ -134,8 +127,12 @@ int main() {
 
 	mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
 	uniform_int_distribution<int> distribution(0, 51);
-	for (int iter = 0; iter < 1000; iter++) {
-		if (iter % 50 == 0) cerr << iter << endl;
+	auto TIME = clock();
+	for (int iter = 0; ; iter++) {
+		if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 300) {
+			break;
+		}
+		if (iter % 500 == 0) cerr << iter << endl;
 		// generate hole cards and board
 		bitset<52> bs;
 		array<array<int, 2>, 2> hands;
