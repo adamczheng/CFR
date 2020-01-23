@@ -7,7 +7,6 @@
 #include <cstring>
 using std::array;
 
-
 class HandRanks {
 	int HR[32487834];
 public:

@@ -14,7 +14,6 @@ extern "C" {
 #include "HandRanks.hpp"
 using namespace std;
 class Buckets {
-	
 	string pf_cluster[8] = { "23s,24s,25s,26s,27s,34s,35s,36s,37s,45s,46s,32o,43o,42o,54o,53o,52o,65o,64o,63o,62o,74o,73o,72o,83o,82o",
 "28s,29s,2Ts,38s,39s,47s,48s,49s,75o,85o,84o,95o,94o,93o,92o,T5o,T4o,T3o,T2o,J3o,J2o",
 "3Ts,4Ts,56s,57s,58s,59s,5Ts,67s,68s,69s,6Ts,78s,79s,89s,67o,68o,69o,6To,78o,79o,7To,89o,8To",
@@ -78,8 +77,7 @@ class Buckets {
 			}
 		}
 	}
-	
-	
+
 	ifstream f_in, t_in, r_in;
 	vector<vector<double> > flop_centers, turn_centers, river_centers;
 public:

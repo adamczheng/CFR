@@ -113,6 +113,5 @@ public:
 	 * Advances the game tree by one action performed by the active player.
 	 */
 	State* proceed(Action action);
-
 };
 #endif  // __SKELETON_STATES_HPP__

@@ -15,17 +15,16 @@ class EHSLookup {
 	hand_indexer_t indexer[4];
 	std::vector<std::vector<float>> lookup;
 
-
 public:
 	explicit EHSLookup(const char* filename) : lookup(4) {
 		uint8_t iiii[] = { 2 };
 		uint8_t iiiii[] = { 2,3 };
 		uint8_t iiiiii[] = { 2,4 };
 		uint8_t iiiiiii[] = { 2,5 };
-		assert(hand_indexer_init(1, iiii, & indexer[0]));
-		assert(hand_indexer_init(2, iiiii, & indexer[1]));
-		assert(hand_indexer_init(2, iiiiii, & indexer[2]));
-		assert(hand_indexer_init(2, iiiiiii, & indexer[3]));
+		assert(hand_indexer_init(1, iiii, &indexer[0]));
+		assert(hand_indexer_init(2, iiiii, &indexer[1]));
+		assert(hand_indexer_init(2, iiiiii, &indexer[2]));
+		assert(hand_indexer_init(2, iiiiiii, &indexer[3]));
 
 		if (!load_lookup(filename))
 			throw std::runtime_error("EHSLookup file could not be loaded.");
