@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cassert>
 #include <array>
+#include <mutex>;
 #include "states.hpp"
 #include "Buckets.cpp"
 #include <iomanip>
@@ -12,6 +13,7 @@ using std::array;
 class InfoSet {
 public:
 	// index i refers to child i
+	mutex m;
 	vector<double> regret;
 	vector<double> cumulativeStrategy;
 	int cnt;
@@ -22,6 +24,21 @@ public:
 		regret.assign(sz, 0.0);
 		cumulativeStrategy.assign(sz, 0.0);
 		cnt = 0;
+	}
+	void update_regrets(const vector<double>& u, double ev) {
+		//cerr << "update regret" << endl;
+		lock_guard<mutex> mg(m);
+		for (int i = 0; i < (int)regret.size(); i++) {
+			regret[i] += u[i] - ev;
+		}
+	}
+	void update_cumulative_strategy(const vector<double>& s, double p, double op, int iter) {
+		//cerr << "updating cumulative_strategy" << endl;
+		lock_guard<mutex> mg(m);
+		for (int i = 0; i < (int)regret.size(); i++) {
+			cumulativeStrategy[i] += p * s[i] / op;
+			cumulativeStrategy[i] *= 1.0 * iter / (iter + 1);
+		}
 	}
 };
 class CFR {
@@ -47,11 +64,11 @@ public:
 		assert(0);
 	}
 
-	double TrainExternalSampling(State* state, int trainplayer, array<array<int, 2>, 2> hands, array<int, 5> board, double p, double op, int who_won, double folded = false) {
-		state->who_won = who_won;
+	double TrainExternalSampling(int iter, State* state, int trainplayer, array<array<int, 2>, 2> hands, array<int, 5> board, double p, double op, int who_won, double folded = false) {
+		//cerr << iter << endl;
 		if (state->is_decision) {
 			RoundState* round_state = (RoundState*)state;
-			assert(round_state->who_won == state->who_won);
+			//assert(round_state->who_won == state->who_won);
 			int player = (round_state->button) % 2;
 			int active = player;
 			int my_pip = round_state->pips[active];  // the number of chips you have contributed to the pot this round of betting
@@ -75,40 +92,40 @@ public:
 			if (player == trainplayer) {
 				vector<double> s = GetStrategy(iset);
 				int n_children = round_state->children.size();
-				for (int i = 0; i < n_children; i++)
-					iset->cumulativeStrategy[i] += p * s[i] / op;
+				iset->update_cumulative_strategy(s, p, op, iter);
+				
 				vector<double> u(n_children);
 				double ev = 0;
 				for (int i = 0; i < n_children; i++) {
-					round_state->children[i]->who_won = who_won;
+					//round_state->children[i]->who_won = who_won;
 					bool folded = false;
 					if (!round_state->children[i]->is_decision) {
 						RoundState* ps = (RoundState*)((TerminalState*)(round_state->children[i]))->previous_state;
 						if (ps->pips[0] != ps->pips[1]) {
 							folded = true;
-							assert(i == n_children - 1);
+							//assert(i == n_children - 1);
 						}
 					}
-					u[i] = TrainExternalSampling(round_state->children[i], trainplayer, hands, board, p * s[i], op, who_won, true);
+					u[i] = TrainExternalSampling(iter, round_state->children[i], trainplayer, hands, board, p * s[i], op, who_won, true);
 					ev += u[i] * s[i];
 				}
-				for (int i = 0; i < n_children; i++)
-					iset->regret[i] += u[i] - ev;
+				iset->update_regrets(u, ev);
+					
 				return ev;
 			}
 			else {
 				vector<double> s = GetStrategy(iset);
 				int a = SampleStrategy(s);
-				round_state->children[a]->who_won = who_won;
+				//round_state->children[a]->who_won = who_won;
 				bool folded = false;
 				if (!round_state->children[a]->is_decision) {
 					RoundState* ps = (RoundState*)((TerminalState*)(round_state->children[a]))->previous_state;
 					if (ps->pips[0] != ps->pips[1]) {
 						folded = true;
-						assert(a == (int)s.size() - 1);
+						//assert(a == (int)s.size() - 1);
 					}
 				}
-				return TrainExternalSampling(round_state->children[a], trainplayer, hands, board, p, op * s[a], who_won, folded);
+				return TrainExternalSampling(iter, round_state->children[a], trainplayer, hands, board, p, op * s[a], who_won, folded);
 			}
 		}
 		else {
@@ -268,8 +285,8 @@ public:
 				dump_strategy(state->children[child_id++], history);
 			}
 			else {
-				assert(legal_action_mask & CALL_ACTION_TYPE);
-				assert(legal_action_mask & FOLD_ACTION_TYPE);
+				//assert(legal_action_mask & CALL_ACTION_TYPE);
+				//assert(legal_action_mask & FOLD_ACTION_TYPE);
 				dump_strategy(state->children[child_id++], history);
 				dump_strategy(state->children[child_id++], history);
 			}

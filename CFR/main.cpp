@@ -1,4 +1,6 @@
 #include <bits/stdc++.h>
+#include <thread>
+using namespace std;
 #include "states.hpp"
 #include "actions.hpp"
 #include "CFR.cpp"
@@ -14,7 +16,7 @@ const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 1.0, 999 };
 set<pair<int, pair<int, int> > > n_sets[6];
 // children order: legal bets/raises -> check OR call, fold
 void build_tree(State*& state, int active) {
-	assert(state->is_decision);
+	//assert(state->is_decision);
 	RoundState* round_state = (RoundState*)state;
 	int legal_action_mask = round_state->legal_actions();
 	int my_pip = round_state->pips[active];  // the number of chips you have contributed to the pot this round of betting
@@ -59,8 +61,8 @@ void build_tree(State*& state, int active) {
 		state->children.push_back(round_state->proceed(CheckAction()));
 	}
 	else {
-		assert(legal_action_mask & CALL_ACTION_TYPE);
-		assert(legal_action_mask & FOLD_ACTION_TYPE);
+		//assert(legal_action_mask & CALL_ACTION_TYPE);
+		//assert(legal_action_mask & FOLD_ACTION_TYPE);
 		state->children.push_back(round_state->proceed(CallAction()));
 		state->children.push_back(round_state->proceed(FoldAction()));
 	}
@@ -96,23 +98,74 @@ int main() {
 		cfr.pot_index[1][p] = i++;
 	}
 
-	mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-	uniform_int_distribution<int> distribution(0, 51); // CHANGE BACK
+	
 	auto TIME = clock();
 	double num_hours = 7.5;
-	for (int iter = 0; iter < 10000; iter++) {
-		if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0*num_hours) {
+	const int NUM_WORKERS = 16;
+	//vector<thread> workers;
+	//for (int iter = 1; iter <= 10000; iter += NUM_WORKERS) {
+		/*if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0*num_hours) {
 			break;
-		}
-		if (iter % 500 == 0) cerr << iter << endl;
+		}*/
+		//if (iter % 500 == 0) cerr << iter << endl;
 		// generate hole cards and board
-		bitset<52> bs;
+		thread workers[NUM_WORKERS];
+		for (int ii = 0; ii < NUM_WORKERS; ii++) {
+			workers[ii] = (thread([&cfr, &root, ii]() {
+				for (int iter = 1; iter <= 100000; iter += NUM_WORKERS) {
+					if ((iter + ii) % 500 == 0) cerr << iter + ii << endl;
+					mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+					uniform_int_distribution<int> distribution(0, 51); // CHANGE BACK
+					bitset<52> bs;
+					array<array<int, 2>, 2> hands;
+					array<int, 5> board;
+					for (int a = 0; a < 2; a++) {
+						for (int b = 0; b < 2; b++) {
+							int x;
+							do {
+								x = distribution(rng);
+							} while (bs[x]);
+							bs[x] = 1;
+							hands[a][b] = x;
+						}
+					}
+					for (int a = 0; a < 5; a++) {
+						int x;
+						do {
+							x = distribution(rng);
+						} while (bs[x]);
+						bs[x] = 1;
+						board[a] = x;
+					}
+					array<int, 7> cards = { board[0], board[1], board[2], board[3], board[4], hands[0][0], hands[0][1] };
+					int player0strength = cfr.Bucketer->hr->GetHandValue(cards);
+					cards[5] = hands[1][0];
+					cards[6] = hands[1][1];
+					int player1strength = cfr.Bucketer->hr->GetHandValue(cards);
+					int who_won = 2; // 2 = tie
+					if (player0strength > player1strength) who_won = 0;
+					else if (player1strength > player0strength) who_won = 1;
+
+					/* test */
+					//who_won = 2;
+					//if (hands[0][0] > hands[1][0]) who_won = 0;
+					//else if (hands[0][0] < hands[1][0]) who_won = 1;
+					/* end test */
+
+					cfr.TrainExternalSampling(iter + ii, root, 0, hands, board, 1, 1, who_won);
+					cfr.TrainExternalSampling(iter + ii, root, 1, hands, board, 1, 1, who_won);
+				}
+				}));
+		}
+		for_each(workers, workers+NUM_WORKERS, [](thread& t) {
+			t.join();
+		});
+		//workers.clear();
+		/*bitset<52> bs;
 		array<array<int, 2>, 2> hands;
-		hands[0] = { 0, 0 };
-		hands[1] = { 0, 0 };
-		array<int, 5> board = { 0, 0, 0, 0, 0 };
+		array<int, 5> board;
 		for (int a = 0; a < 2; a++) {
-			for (int b = 0; b < 2 /*CHANGE BACK*/; b++) {
+			for (int b = 0; b < 2; b++) {
 				int x;
 				do {
 					x = distribution(rng);
@@ -144,9 +197,10 @@ int main() {
 		//else if (hands[0][0] < hands[1][0]) who_won = 1;
 		/* end test */
 
-		cfr.TrainExternalSampling(root, 0, hands, board, 1, 1, who_won);
-		cfr.TrainExternalSampling(root, 1, hands, board, 1, 1, who_won);
-	}
+		/*cfr.TrainExternalSampling(iter, root, 0, hands, board, 1, 1, who_won);
+		cfr.TrainExternalSampling(iter, root, 1, hands, board, 1, 1, who_won);*/
+	//}
+	cerr << "here!" << endl;
 	cout << cfr.iset_cnt << endl;
 	cfr.dump_strategy(root, {});
 
