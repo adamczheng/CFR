@@ -7,10 +7,12 @@
 #include "actions.hpp"
 #include <random>
 #include <chrono>
+#include <utility>
 
 using std::array;
 using std::vector;
 using std::string;
+using std::pair;
 
 const int NUM_ROUNDS = 1000;
 const int STARTING_STACK = 200;
@@ -41,8 +43,7 @@ class State
 {
 public:
 	bool is_decision;
-	int who_won;
-	vector<State*> children;
+	vector<pair<State*, pair<char,int> > > children;
 	//virtual double TrainExternalSampling(int trainplayer, int* hands, double p, double op);
 	//virtual double BestResponse(int brplayer, int hand, const vector<double>& op);
 	//virtual void PrintStrategy(int* hands, int depth, string history);

@@ -14,10 +14,19 @@ const int NUM_RAISE_SIZES = 2;
 const array<double, NUM_BET_SIZES> BET_SIZES = { 0.5, 1.0, 2.0, 999 };
 const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 1.0, 999 };
 set<pair<int, pair<int, int> > > n_sets[6];
+int pot_odds_bucket(double odds) {
+	if (odds * 6 < 1) return 0;
+	if (odds < 0.25) return 1;
+	if (odds * 3 < 1) return 2;
+	if (odds < 0.4) return 3;
+	if (odds * 9 < 4) return 4;
+	return 5;
+}
 // children order: legal bets/raises -> check OR call, fold
-void build_tree(State*& state, int active) {
-	//assert(state->is_decision);
+void build_tree(State*& state) {
+	assert(state->is_decision);
 	RoundState* round_state = (RoundState*)state;
+	int active = (round_state->button) % 2;
 	int legal_action_mask = round_state->legal_actions();
 	int my_pip = round_state->pips[active];  // the number of chips you have contributed to the pot this round of betting
 	int opp_pip = round_state->pips[1 - active];  // the number of chips your opponent has contributed to the pot this round of betting
@@ -37,10 +46,10 @@ void build_tree(State*& state, int active) {
 				int delta = continue_cost + (int)(BET_SIZES[i] * pot);
 				int sizing = my_pip + delta;
 				if (min_raise <= sizing && sizing < max_raise) {
-					state->children.push_back(round_state->proceed(RaiseAction(sizing)));
+					state->children.push_back({ round_state->proceed(RaiseAction(sizing)), {'B', i} });
 				}
 				if (BET_SIZES[i] > 990) {
-					state->children.push_back(round_state->proceed(RaiseAction(max_raise)));
+					state->children.push_back({ round_state->proceed(RaiseAction(max_raise)), {'B', i} });
 				}
 			}
 		}
@@ -49,73 +58,72 @@ void build_tree(State*& state, int active) {
 				int delta = continue_cost + (int)(RAISE_SIZES[i] * pot);
 				int sizing = my_pip + delta;
 				if (min_raise <= sizing && sizing < max_raise) {
-					state->children.push_back(round_state->proceed(RaiseAction(sizing)));
+					state->children.push_back({ round_state->proceed(RaiseAction(sizing)), {'R', i} });
 				}
 				if (RAISE_SIZES[i] > 990) {
-					state->children.push_back(round_state->proceed(RaiseAction(max_raise)));
+					state->children.push_back({ round_state->proceed(RaiseAction(max_raise)), {'R', i} });
 				}
 			}
 		}
 	}
 	if (legal_action_mask & CHECK_ACTION_TYPE) {
-		state->children.push_back(round_state->proceed(CheckAction()));
+		state->children.push_back({ round_state->proceed(CheckAction()), {'X', 0} });
 	}
 	else {
-		//assert(legal_action_mask & CALL_ACTION_TYPE);
-		//assert(legal_action_mask & FOLD_ACTION_TYPE);
-		state->children.push_back(round_state->proceed(CallAction()));
-		state->children.push_back(round_state->proceed(FoldAction()));
+		assert(legal_action_mask & CALL_ACTION_TYPE);
+		assert(legal_action_mask & FOLD_ACTION_TYPE);
+		state->children.push_back({ round_state->proceed(CallAction()), {'C', 0} });
+		if (pot_odds_bucket(1.0*continue_cost/pot) != 0)
+			state->children.push_back({ round_state->proceed(FoldAction()), {'F', 0} });
 	}
-	for (State* s : state->children) {
-		if (s->is_decision) {
-			build_tree(s, (((RoundState*)(s))->button) % 2);
+	for (pair<State*,pair<char,int> > s : state->children) {
+		if (s.first->is_decision) {
+			build_tree(s.first);
 		}
 	}
 	return;
 }
 
+
+
 int main() {
-	freopen("dump.txt", "w", stdout);
 	State* root = new RoundState(0, 0, array<int, 2>({ 1, 2 }), array<int, 2>({ 199, 198 }));
-	build_tree(root, 0);
+	build_tree(root);
 	cerr << n_sets[0].size() << ' ' << n_sets[3].size() << ' ' << n_sets[4].size() << ' ' << n_sets[5].size() << endl;
 	CFR cfr;
-	int i = 0;
-	for (pair<int, pair<int, int> > p : n_sets[0]) {
-		cfr.pot_index[0][p] = i++;
-		cfr.pot_index[1][p] = i++;
-	}
-	for (pair<int, pair<int, int> > p : n_sets[3]) {
-		cfr.pot_index[0][p] = i++;
-		cfr.pot_index[1][p] = i++;
-	}
-	for (pair<int, pair<int, int> > p : n_sets[4]) {
-		cfr.pot_index[0][p] = i++;
-		cfr.pot_index[1][p] = i++;
-	}
-	for (pair<int, pair<int, int> > p : n_sets[5]) {
-		cfr.pot_index[0][p] = i++;
-		cfr.pot_index[1][p] = i++;
-	}
 
+	int i = 0;
+	for (int street = 0; street <= 5; street++) {
+		if (street == 1 || street == 2) continue;
+		for (pair<int, pair<int, int> > p : n_sets[street]) {
+			double pot_odds = 1.0 * abs(p.second.second - p.second.first) / p.first;
+			for (int j = 0; j < 6; j++) {//
+				cfr.pot_index[j][pot_odds_bucket(pot_odds)][p.first] = i++;
+				//cfr.pot_index[1][j][{p.first, 8 * (.1249 + 1.0 * (p.second.first - p.second.second) / p.first)}] = i++;
+			}
+		}
+	}
 	
-	auto TIME = clock();
-	double num_hours = 7.5;
-	const int NUM_WORKERS = 16;
-	//vector<thread> workers;
-	//for (int iter = 1; iter <= 10000; iter += NUM_WORKERS) {
-		/*if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0*num_hours) {
-			break;
-		}*/
-		//if (iter % 500 == 0) cerr << iter << endl;
-		// generate hole cards and board
+	int training_iter = 0;
+	int iter = 1;
+	while (1) {
+		cerr << "got here!" << endl;
+		string fname = "dump" + to_string(training_iter++) + ".txt";
+		freopen(fname.c_str(), "w", stdout);
+		const int NUM_WORKERS = 96;
 		thread workers[NUM_WORKERS];
 		for (int ii = 0; ii < NUM_WORKERS; ii++) {
-			workers[ii] = (thread([&cfr, &root, ii]() {
-				for (int iter = 1; iter <= 100000; iter += NUM_WORKERS) {
-					if ((iter + ii) % 500 == 0) cerr << iter + ii << endl;
+			workers[ii] = (thread([&iter, &cfr, &root, ii]() {
+				double num_hours = 0.1;
+				auto TIME = clock();
+				int target = iter + 2000000;
+				for (; iter <= target; iter += NUM_WORKERS) {
+					if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0 * NUM_WORKERS * num_hours) {
+						break;
+					}
+					if ((iter + ii) % 100000 == 0) cerr << iter + ii << endl;
 					mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-					uniform_int_distribution<int> distribution(0, 51); // CHANGE BACK
+					uniform_int_distribution<int> distribution(0, 51);
 					bitset<52> bs;
 					array<array<int, 2>, 2> hands;
 					array<int, 5> board;
@@ -155,95 +163,14 @@ int main() {
 					cfr.TrainExternalSampling(iter + ii, root, 0, hands, board, 1, 1, who_won);
 					cfr.TrainExternalSampling(iter + ii, root, 1, hands, board, 1, 1, who_won);
 				}
-				}));
+			}));
 		}
-		for_each(workers, workers+NUM_WORKERS, [](thread& t) {
+		for_each(workers, workers + NUM_WORKERS, [](thread& t) {//
 			t.join();
 		});
-		//workers.clear();
-		/*bitset<52> bs;
-		array<array<int, 2>, 2> hands;
-		array<int, 5> board;
-		for (int a = 0; a < 2; a++) {
-			for (int b = 0; b < 2; b++) {
-				int x;
-				do {
-					x = distribution(rng);
-				} while (bs[x]);
-				bs[x] = 1;
-				hands[a][b] = x;
-			}
-		}
-		for (int a = 0; a < 5; a++) {
-			int x;
-			do {
-				x = distribution(rng);
-			} while (bs[x]);
-			bs[x] = 1;
-			board[a] = x;
-		}
-		array<int, 7> cards = { board[0], board[1], board[2], board[3], board[4], hands[0][0], hands[0][1] };
-		int player0strength = cfr.Bucketer->hr->GetHandValue(cards);
-		cards[5] = hands[1][0];
-		cards[6] = hands[1][1];
-		int player1strength = cfr.Bucketer->hr->GetHandValue(cards);
-		int who_won = 2; // 2 = tie
-		if (player0strength > player1strength) who_won = 0;
-		else if (player1strength > player0strength) who_won = 1;
-		
-		/* test */
-		//who_won = 2;
-		//if (hands[0][0] > hands[1][0]) who_won = 0;
-		//else if (hands[0][0] < hands[1][0]) who_won = 1;
-		/* end test */
-
-		/*cfr.TrainExternalSampling(iter, root, 0, hands, board, 1, 1, who_won);
-		cfr.TrainExternalSampling(iter, root, 1, hands, board, 1, 1, who_won);*/
-	//}
-	cerr << "here!" << endl;
-	cout << cfr.iset_cnt << endl;
-	cfr.dump_strategy(root, {});
-
-	/*Decision* root = new Decision(0, {
-		// p0 bets 1
-		new Decision(1, {
-			// p1 calls
-			new Showdown(2),
-			// p1 folds
-			new Fold(1)
-		}),
-		// p0 checks
-		new Decision(1, {
-			// p1 bets 1
-			new Decision(0, {
-				// p0 calls
-				new Showdown(2),
-				// p0 folds
-				new Fold(-1)
-			}),
-			// p1 checks
-			new Showdown(1)
-		})
-		});*/
-		/*for (int iters = 0; iters < 10000000; iters++) {
-			auto hands = DealHands();
-			root->TrainExternalSampling(0, hands, 1, 1);
-			root->TrainExternalSampling(1, hands, 1, 1);
-			if (iters % 1000000 == 0) {
-				cout << "iteration #" << iters << " exploitability" << endl;
-				double br0 = root->BestResponse(0);
-				double br1 = root->BestResponse(1);
-				cout << fixed << setprecision(10) << br0 << ' ' << br1 << ' ' << br0 + br1 << endl;
-			}
-		}
-		for (int a = 0; a < 3; a++) {
-			for (int b = 0; b < 3; b++) {
-				if (a != b) {
-					cout << a << ' ' << b << endl;
-					int hands[2] = { a, b };
-					root->PrintStrategy(hands, 0, "");
-				}
-			}
-		}*/
+		cerr << "training iteration done!" << endl;
+		cout << cfr.iset_cnt << endl;
+		cfr.dump_strategy(root);
+	}
 	return 0;
 }

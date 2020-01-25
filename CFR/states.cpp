@@ -10,15 +10,7 @@
   */
 State* RoundState::showdown()
 {
-	int delta;
-	if (who_won == 0)
-		delta = STARTING_STACK - this->stacks[1];
-	else if (who_won == 1)
-		delta = this->stacks[0] - STARTING_STACK;
-	else {
-		delta = (this->stacks[0] - this->stacks[1]) / 2;
-		assert(delta == 0);
-	}
+	int delta = STARTING_STACK - this->stacks[1];
 	return new TerminalState(array<int, 2>{delta, -delta}, this);
 }
 
