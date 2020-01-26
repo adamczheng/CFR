@@ -4,6 +4,7 @@
 #include <cassert>
 #include <array>
 #include <mutex>;
+#include <cstring>
 #include "states.hpp"
 #include "Buckets.cpp"
 #include <iomanip>
@@ -40,9 +41,9 @@ public:
 };
 class CFR {
 	std::mt19937 rng;
-	unordered_map<int, InfoSet*> infoset[6][200];
+	unordered_map<int, InfoSet*> infoset[7][200];
 public:
-	unordered_map<int, int> pot_index[6][6];
+	int pot_index[7][7][401];
 	Buckets* Bucketer;
 	int iset_cnt;
 	CFR() {
@@ -58,7 +59,8 @@ public:
 			acc += s[i];
 			if (r < acc) return i;
 		}
-		assert(0);
+		assert(r - acc < 0.01);
+		return (int)s.size() - 1;
 	}
 
 	int pot_odds_bucket(double odds) {
@@ -93,7 +95,6 @@ public:
 			InfoSet*& iset = infoset[round_state->street]
 				[card_abs]
 			[potid];
-
 			if (iset == NULL) {
 				iset = new InfoSet((int)round_state->children.size());
 				iset_cnt++;
