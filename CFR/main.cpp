@@ -8,11 +8,11 @@ using namespace std;
 using namespace std;
 
 const int DECK_SIZE = 52;
-const int MAX_ACTIONS_PER_STREET = 4;
+const int MAX_ACTIONS_PER_STREET = 999;
 const int NUM_BET_SIZES = 4;
-const int NUM_RAISE_SIZES = 2;
+const int NUM_RAISE_SIZES = 3;
 const array<double, NUM_BET_SIZES> BET_SIZES = { 0.5, 1.0, 2.0, 999 };
-const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 1.0, 999 };
+const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 0.5, 1.0, 999 };
 set<pair<int, pair<int, int> > > n_sets[6];
 int pot_odds_bucket(double odds) {
 	if (odds * 6 < 1) return 0;
@@ -42,34 +42,34 @@ void build_tree(State*& state) {
 		int min_raise = round_state->raise_bounds()[0];
 		int max_raise = round_state->raise_bounds()[1];
 		bool is_bet = (continue_cost == 0);
-		if (is_bet) {
+		if (is_bet) {//
 			for (int i = 0; i < NUM_BET_SIZES; i++) {
-				int delta = continue_cost + (int)(BET_SIZES[i] * pot);
+				int delta = continue_cost + (int)round(BET_SIZES[i] * pot);
 				int sizing = my_pip + delta;
 				if (min_raise <= sizing && sizing < max_raise) {
 					state->children.push_back({ round_state->proceed(RaiseAction(sizing)), {'B', i} });
 				}
 				if (BET_SIZES[i] > 990) {
-					//state->children.push_back({ round_state->proceed(RaiseAction(max_raise)), {'B', i} });
+					state->children.push_back({ round_state->proceed(RaiseAction(max_raise)), {'B', i} });
 				}
 			}
 		}
 		else {
 			for (int i = 0; i < NUM_RAISE_SIZES; i++) {
-				int delta = continue_cost + (int)(RAISE_SIZES[i] * pot);
+				int delta = continue_cost + (int)round(RAISE_SIZES[i] * pot);
 				int sizing = my_pip + delta;
 				if (min_raise <= sizing && sizing < max_raise) {
 					state->children.push_back({ round_state->proceed(RaiseAction(sizing)), {'R', i} });
 				}
 				if (RAISE_SIZES[i] > 990) {//
-					//state->children.push_back({ round_state->proceed(RaiseAction(max_raise)), {'R', i} });
+					state->children.push_back({ round_state->proceed(RaiseAction(max_raise)), {'R', i} });
 				}
 			}
-		}
+		}//
 	}
-	if (legal_action_mask & RAISE_ACTION_TYPE) {
+	/*if (legal_action_mask & RAISE_ACTION_TYPE) {
 		state->children.push_back({ round_state->proceed(RaiseAction(round_state->raise_bounds()[1])), {'R', NUM_RAISE_SIZES - 1} });
-	}
+	}*/
 	if (legal_action_mask & CHECK_ACTION_TYPE) {
 		state->children.push_back({ round_state->proceed(CheckAction()), {'X', 0} });
 	}
@@ -101,7 +101,7 @@ int main() {
 		if (street == 1 || street == 2) continue;
 		for (pair<int, pair<int, int> > p : n_sets[street]) {
 			double pot_odds = 1.0 * abs(p.second.second - p.second.first) / p.first;
-			for (int j = 0; j < 7; j++) {//
+			for (int j = 0; j < 15; j++) {//
 				cfr.pot_index[j][pot_odds_bucket(pot_odds)][p.first] = i++;
 				//cfr.pot_index[1][j][{p.first, 8 * (.1249 + 1.0 * (p.second.first - p.second.second) / p.first)}] = i++;
 			}
@@ -112,7 +112,8 @@ int main() {
 	int iter = 1;
 	while (1) {
 		cerr << "training iteration #" << training_iter << " starting" << endl;
-		string fname = "dump" + to_string(training_iter++) + ".txt";
+		string fname = "dump" + to_string((int)(training_iter%10)) + ".txt";
+		training_iter++;
 		freopen(fname.c_str(), "w", stdout);
 		const int NUM_WORKERS = 96;
 		thread workers[NUM_WORKERS];
@@ -120,10 +121,10 @@ int main() {
 			workers[ii] = (thread([&iter, &cfr, &root, ii]() {
 				double num_hours = 0.1;
 				auto TIME = clock();
-				int target = iter + 10000000;
+				int target = iter + 1000000;//
 				for (; iter <= target; iter += NUM_WORKERS) {
 					if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0 * NUM_WORKERS * num_hours) {
-						break;
+						break;//
 					}
 					//if ((iter + ii) % 100000 == 0) cerr << iter + ii << endl;
 					mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -174,6 +175,11 @@ int main() {
 		});
 		cerr << "training iteration done!" << endl;
 		cout << cfr.iset_cnt << endl;
+		for (int z = 0; z < 15; z++) {
+			for (int zz = 0; zz < 200; zz++) {
+				cfr.seeninfoset[z][zz].clear();
+			}
+		}
 		cfr.dump_strategy(root);
 	}
 	return 0;

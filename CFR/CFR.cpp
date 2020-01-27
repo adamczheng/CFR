@@ -41,9 +41,11 @@ public:
 };
 class CFR {
 	std::mt19937 rng;
-	unordered_map<int, InfoSet*> infoset[7][200];
+	unordered_map<int, InfoSet*> infoset[15][200];
+	
 public:
-	int pot_index[7][7][401];
+	int pot_index[15][15][401];
+	unordered_map<int, int> seeninfoset[15][200];
 	Buckets* Bucketer;
 	int iset_cnt;
 	CFR() {
@@ -126,6 +128,7 @@ public:
 				if (round_state->children[a].first == NULL) {
 					cerr << "dafuq2"  <<' ' << a <<' ' <<s.size() << ' ' << round_state->children.size()<< endl;
 					cerr << round_state->street << ' ' << my_pip << ' ' << opp_pip << ' ' << pot << endl;
+					assert(0);
 				}
 				return TrainExternalSampling(iter, round_state->children[a].first, trainplayer, hands, board, p, op * s[a], who_won, f);
 			}
@@ -182,12 +185,6 @@ public:
 				s[i] = 1.0 / n_children;
 		return s;
 	}
-	const static int DECK_SIZE = 52;
-	const static int NUM_BET_SIZES = 4;
-	const static int MAX_ACTIONS_PER_STREET = 4;
-	const static int NUM_RAISE_SIZES = 2;
-	const array<double, NUM_BET_SIZES> BET_SIZES = { 0.5, 1.0, 2.0, 999 };
-	const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 1.0, 999 };
 	void dump_strategy(State* state) {
 		if (state->is_decision) {
 			RoundState* round_state = (RoundState*)state;
@@ -204,10 +201,12 @@ public:
 			int child_id = 0;
 			for (int i = 0; i < 200; i++) {
 				int rounded_pot_odds = pot_odds_bucket(1.0 * continue_cost / pot);
+				int pot_id = pot_index[round_state->button][rounded_pot_odds][pot];
 				InfoSet*& iset = infoset[round_state->street]
 					[i]
-				[pot_index[round_state->button][rounded_pot_odds][pot]];
-				if (iset == NULL) continue;
+				[pot_id];
+				if (iset == NULL || seeninfoset[round_state->street][i][pot_id]) continue;
+				seeninfoset[round_state->street][i][pot_id] = 1;
 				if (pot == 400 && my_contribution == opp_contribution) continue;
 				cout << round_state->street << ' ' << i << ' ';
 				cout /*<< active << ' '*/<< round_state->button <<' ' << pot << ' ' << pot_odds_bucket(1.0 * continue_cost / pot) << ": ";
