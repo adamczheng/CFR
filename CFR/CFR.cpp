@@ -9,6 +9,7 @@
 #include "Buckets.cpp"
 #include <iomanip>
 #include <unordered_map>
+#include <iostream>
 using std::vector;
 using std::array;
 class InfoSet {
@@ -61,7 +62,7 @@ public:
 			acc += s[i];
 			if (r < acc) return i;
 		}
-		assert(r - acc < 0.01);
+		assert(abs(r - acc) < 0.01);
 		return (int)s.size() - 1;
 	}
 

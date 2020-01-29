@@ -1,6 +1,3 @@
-extern "C" {
-#include "hand_index.h"
-}
 #include <array>
 #include <cstring>
 #include <vector>
@@ -10,8 +7,10 @@ extern "C" {
 #include <bitset>
 #include <fstream>
 #include <cstdio>
-#include "ehs_lookup.hpp"
+#include <random>
+#include <chrono>
 #include "HandRanks.hpp"
+#include "LUT.h"
 using namespace std;
 class Buckets {
 	string pf_cluster[8] = { "23s,24s,25s,26s,27s,34s,35s,36s,37s,45s,46s,32o,43o,42o,54o,53o,52o,65o,64o,63o,62o,74o,73o,72o,83o,82o",
@@ -69,7 +68,6 @@ class Buckets {
 			string token;
 			while (getline(ss, token, ',')) {
 				split_cluster.push_back(token);
-				//cout << token << endl;
 			}
 			for (string s : split_cluster) {
 				vector<array<int, 2> > tmp = convert(s);
@@ -82,20 +80,14 @@ class Buckets {
 	vector<vector<double> > flop_centers, turn_centers, river_centers;
 public:
 	HandRanks* hr;
-	hand_indexer_t indexer[4];
-	EHSLookup* ehslp;
+	CLutRiver* river;
 	Buckets() {
+		river = new CLutRiver();
+		river->read_suitfile("river_suit.dat");
+		river->load("river_lut.dat");
 		hr = new HandRanks("handranks.dat");
 		split_clusters();
-		ehslp = new EHSLookup("ehs.dat");
-		uint8_t iiii[] = { 2 };
-		uint8_t iiiii[] = { 2,3 };
-		uint8_t iiiiii[] = { 2,4 };
-		uint8_t iiiiiii[] = { 2,5 };
-		assert(hand_indexer_init(1, iiii, &indexer[0]));
-		assert(hand_indexer_init(2, iiiii, &indexer[1]));
-		assert(hand_indexer_init(2, iiiiii, &indexer[2]));
-		assert(hand_indexer_init(2, iiiiiii, &indexer[3]));
+
 		f_in.open("flopcenters.txt");
 		for (int i = 0; i < 100; i++) {
 			vector<double> p(51);
@@ -124,21 +116,6 @@ public:
 		}
 		r_in.close();
 	}
-	static int GetBucketCount(int street) {
-		if (street == 0) {
-			return 169;
-		}
-		else if (street == 3) {
-			return 100;
-		}
-		else if (street == 4) {
-			return 100;
-		}
-		else {
-			// street == 5
-			return 100;
-		}
-	}
 	vector<double> GetHistogram(int street, array<int, 2> hand, array<int, 5> board) {
 		assert(street == 3 || street == 4);
 		bitset<52> used;
@@ -146,33 +123,23 @@ public:
 		used[hand[1]] = 1;
 		for (int i = 0; i < street; i++)
 			used[board[i]] = 1;
-		uint8_t cards[7];
-		cards[0] = hand[0];
-		cards[1] = hand[1];
-		cards[2] = board[0];
-		cards[3] = board[1];
-		cards[4] = board[2];
 		vector<double> bucket(51, 0.0);
 		if (street == 3) {
 			for (int i = 0; i < 52; i++) {
 				if (used[i]) continue;
 				for (int j = i + 1; j < 52; j++) {
 					if (used[j]) continue;
-					cards[5] = i;
-					cards[6] = j;
-					hand_index_t hit = hand_index_last(&indexer[3], cards);
-					bucket[(int)(ehslp->raw(3, hit) * 50)] += 1;
+					int arr[] = { board[0], board[1], board[2], i, j };
+					bucket[(int)(river->data[river->g_index(hand[0], hand[1], arr)] * 50)] += 1;
 				}
 			}
 		}
 		else {
 			// street == 4
-			cards[5] = board[3];
 			for (int i = 0; i < 52; i++) {
 				if (used[i]) continue;
-				cards[6] = i;
-				hand_index_t hit = hand_index_last(&indexer[3], cards);
-				bucket[(int)(ehslp->raw(3, hit) * 50)] += 1;
+				int arr[] = { board[0], board[1], board[2], board[3], i };
+				bucket[(int)(river->data[river->g_index(hand[0], hand[1], arr)] * 50)] += 1;
 			}
 		}
 		double sum = 0;

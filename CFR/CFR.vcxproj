@@ -63,7 +63,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>WSL_1_0</PlatformToolset>
+    <PlatformToolset>Remote_GCC_1_0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -78,30 +78,32 @@
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
     <ClCompile Include="actions.cpp" />
+    <ClCompile Include="buckettest.cpp" />
+    <ClCompile Include="centergenerator.cpp" />
     <ClCompile Include="CFR.cpp" />
-    <ClCompile Include="deck.c" />
-    <ClCompile Include="hand_index.c" />
+    <ClCompile Include="LUT.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Buckets.cpp" />
+    <ClCompile Include="HS_Data_Generator.cpp" />
     <ClCompile Include="states.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="actions.hpp" />
-    <ClInclude Include="deck.h" />
-    <ClInclude Include="ehs_lookup.hpp" />
     <ClInclude Include="HandRanks.hpp" />
-    <ClInclude Include="hand_index-impl.h" />
-    <ClInclude Include="hand_index.h" />
+    <ClInclude Include="LUT.h" />
     <ClInclude Include="states.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ehs.dat" />
+    <None Include="flop_lut.dat" />
+    <None Include="flop_suit.dat" />
     <None Include="handranks.dat" />
+    <None Include="river_lut.dat" />
+    <None Include="river_suit.dat" />
+    <None Include="turn_lut.dat" />
+    <None Include="turn_suit.dat" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="dump.txt" />
     <Text Include="flopcenters.txt" />
-    <Text Include="oldstuff.txt" />
     <Text Include="rivercenters.txt" />
     <Text Include="turncenters.txt" />
   </ItemGroup>

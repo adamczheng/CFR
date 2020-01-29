@@ -4,17 +4,18 @@ using namespace std;
 #include "states.hpp"
 #include "actions.hpp"
 #include "CFR.cpp"
+#include "LUT.h"
 
 using namespace std;
 
 const int DECK_SIZE = 52;
 const int MAX_ACTIONS_PER_STREET = 999;
 const int NUM_BET_SIZES = 4;
-const int NUM_RAISE_SIZES = 3;
+const int NUM_RAISE_SIZES = 4;
 const array<double, NUM_BET_SIZES> BET_SIZES = { 0.5, 1.0, 2.0, 999 };
-const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 0.5, 1.0, 999 };
+const array<double, NUM_RAISE_SIZES> RAISE_SIZES = { 0.5, 1.0, 2.0, 999 };
 set<pair<int, pair<int, int> > > n_sets[6];
-int pot_odds_bucket(double odds) {
+int pot_odds_bucket(double odds) {//
 	if (odds * 6 < 1) return 0;
 	if (odds < 0.25) return 1;
 	if (odds * 3 < 1) return 2;
@@ -22,7 +23,6 @@ int pot_odds_bucket(double odds) {
 	if (odds * 9 < 4) return 4;
 	return 5;
 }
-// children order: legal bets/raises -> check OR call, fold
 void build_tree(State*& state) {
 	assert(state->is_decision);
 	RoundState* round_state = (RoundState*)state;
@@ -103,7 +103,6 @@ int main() {
 			double pot_odds = 1.0 * abs(p.second.second - p.second.first) / p.first;
 			for (int j = 0; j < 15; j++) {//
 				cfr.pot_index[j][pot_odds_bucket(pot_odds)][p.first] = i++;
-				//cfr.pot_index[1][j][{p.first, 8 * (.1249 + 1.0 * (p.second.first - p.second.second) / p.first)}] = i++;
 			}
 		}
 	}
@@ -116,15 +115,15 @@ int main() {
 		training_iter++;
 		freopen(fname.c_str(), "w", stdout);
 		const int NUM_WORKERS = 96;
-		thread workers[NUM_WORKERS];
+		thread workers[NUM_WORKERS];//
 		for (int ii = 0; ii < NUM_WORKERS; ii++) {
 			workers[ii] = (thread([&iter, &cfr, &root, ii]() {
 				double num_hours = 0.1;
 				auto TIME = clock();
-				int target = iter + 1000000;//
+				int target = iter + 10000000;
 				for (; iter <= target; iter += NUM_WORKERS) {
 					if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0 * NUM_WORKERS * num_hours) {
-						break;//
+						break;
 					}
 					//if ((iter + ii) % 100000 == 0) cerr << iter + ii << endl;
 					mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -159,18 +158,12 @@ int main() {
 					if (player0strength > player1strength) who_won = 0;
 					else if (player1strength > player0strength) who_won = 1;
 
-					/* test */
-					//who_won = 2;
-					//if (hands[0][0] > hands[1][0]) who_won = 0;
-					//else if (hands[0][0] < hands[1][0]) who_won = 1;
-					/* end test */
-
 					cfr.TrainExternalSampling(iter + ii, root, 0, hands, board, 1, 1, who_won);
 					cfr.TrainExternalSampling(iter + ii, root, 1, hands, board, 1, 1, who_won);
 				}
 			}));
 		}
-		for_each(workers, workers + NUM_WORKERS, [](thread& t) {//
+		for_each(workers, workers + NUM_WORKERS, [](thread& t) {
 			t.join();
 		});
 		cerr << "training iteration done!" << endl;
