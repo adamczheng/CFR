@@ -107,7 +107,7 @@ int main() {
 		}
 	}
 	
-	int training_iter = 0;
+	int training_iter = 0;//
 	int iter = 1;
 	while (1) {
 		cerr << "training iteration #" << training_iter << " starting" << endl;
@@ -118,13 +118,9 @@ int main() {
 		thread workers[NUM_WORKERS];//
 		for (int ii = 0; ii < NUM_WORKERS; ii++) {
 			workers[ii] = (thread([&iter, &cfr, &root, ii]() {
-				double num_hours = 0.1;
 				auto TIME = clock();
 				int target = iter + 10000000;
 				for (; iter <= target; iter += NUM_WORKERS) {
-					if (1.0 * (clock() - TIME) / CLOCKS_PER_SEC > 3600.0 * NUM_WORKERS * num_hours) {
-						break;
-					}
 					//if ((iter + ii) % 100000 == 0) cerr << iter + ii << endl;
 					mt19937 rng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
 					uniform_int_distribution<int> distribution(0, 51);

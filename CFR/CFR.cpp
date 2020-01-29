@@ -42,11 +42,11 @@ public:
 };
 class CFR {
 	std::mt19937 rng;
-	unordered_map<int, InfoSet*> infoset[15][200];
+	map<int, InfoSet*> infoset[15][200];
 	
 public:
 	int pot_index[15][15][401];
-	unordered_map<int, int> seeninfoset[15][200];
+	map<int, int> seeninfoset[15][200];
 	Buckets* Bucketer;
 	int iset_cnt;
 	CFR() {
@@ -95,9 +95,7 @@ public:
 			int rounded_pot_odds = pot_odds_bucket(1.0 * continue_cost / pot);
 			int card_abs = Bucketer->GetBucket(round_state->street, hands[player], board);
 			int potid = pot_index[round_state->button][rounded_pot_odds][pot];
-			InfoSet*& iset = infoset[round_state->street]
-				[card_abs]
-			[potid];
+			InfoSet*& iset = infoset[round_state->street][card_abs][potid];
 			if (iset == NULL) {
 				iset = new InfoSet((int)round_state->children.size());
 				iset_cnt++;
